@@ -25,27 +25,40 @@ void UpdateGameplayScreen(void)
     .zoom = 1.0f
     };
 
-    // Determining tile data
-    int rows = 20;
-    int columns = 20;
-
-    int* map = returnMapData(rows, columns);
-
-    Unit* units = returnUnitData();  // lets see if we can spawn him above the blocks, make him fall and land on the tiles
+    int pauseState = 0;
+    Timer timer = { 0 };
+    int ticker = 0; // for counting seconds
+    StartTimer(&timer, SECOND);
 
     Vector2 mousePosition = { 0 };
     Vector2 cameraMouseDifference = { 0, 0 };
     float wheel = 0;
 
+    // Determining tile data
+    int rows = 20;
+    int columns = 20;
+    int* map = returnMapData(rows, columns);
+
+    Unit* units = returnUnitData();  // lets see if we can spawn him above the blocks, make him fall and land on the tiles
+
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
+        if (!(pauseState)) UpdateTimer(&timer);  // with every single cycle, timer->Lifetime is deducted by GetFrameTime as long as it is greater than 0
+        if (TimerDone(&timer)) {  
+            StartTimer(&timer, SECOND);
+            ticker++; // we have a ticker because apparently why not
+        }
+
+        updateCamera(&camera, &cameraMouseDifference);
+        updatePlayer(&units[0]);
+        if (IsKeyPressed(KEY_P)) // Pausing
+        { if (pauseState) pauseState = 0;
+        else pauseState = 1; };
+            
         mousePosition.x = GetMousePosition().x + cameraMouseDifference.x;
         mousePosition.y = GetMousePosition().y + cameraMouseDifference.y;
 
         wheel = GetMouseWheelMove();
-
-        updateCamera(&camera, &cameraMouseDifference);
-        updatePlayer(&units[0]);
 
         BeginDrawing();
 
@@ -81,6 +94,8 @@ void UpdateGameplayScreen(void)
             DrawFPS(10, 10);
             // DrawText(TextFormat("mouseposition= x%fy%f", mousePosition.x, mousePosition.y), 30, 140, 30, LIGHTGRAY);
             // DrawText(TextFormat("cameramousedifference= x%fy%f", cameraMouseDifference.x, cameraMouseDifference.y), 30, 170, 30, LIGHTGRAY);
+            DrawText(TextFormat("ticker= %d", ticker), 30, 170, 30, LIGHTGRAY);
+            DrawText(TextFormat("pauseState= %d", pauseState), 30, 210, 30, LIGHTGRAY);
 
         EndDrawing();
     }

@@ -20,7 +20,13 @@ void behaviourTree(Unit* unit)
 {
     if(unit->needs.hunger < 20)
     {
-        // update waypoint to nearest food coords
+
+        // // update waypoint to nearest food coords
+        // if (unit->position.position.x < units[i].waypoint.x) units[i].position.x += units[i].archetype->speed;
+        // if (units[i].position.x > units[i].waypoint.x) units[i].position.x -= units[i].archetype->speed;
+        // if (units[i].position.z < units[i].waypoint.z) units[i].position.z += units[i].archetype->speed;
+        // if (units[i].position.z > units[i].waypoint.z) units[i].position.z -= units[i].archetype->speed;
+
     }
 
 

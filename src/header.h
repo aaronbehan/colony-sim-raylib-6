@@ -5,6 +5,26 @@
 // Types and structure definitions
 typedef enum GameScreen { TITLE, GAMEPLAY } GameScreen;
 
+// Global variables
+extern GameScreen currentScreen; // simply declaring that this variable exists. we define it in main.c
+
+
+// Screens 
+
+// title.c
+void UpdateTitleScreen(void);
+
+// gameplay.c
+void UpdateGameplayScreen(void);
+
+
+// Mechanics -------------------
+
+// map.c
+int* returnMapData(int rows, int columns);
+
+// characters.c ---------------------------------------------------------------------------------------------
+
 typedef struct HierarchyOfNeeds {  // this dictates behaviour. if a unit is thirsty, he seeks water. if he is cold
     int thirst;
     int hunger;
@@ -24,7 +44,6 @@ typedef struct Unit {
 
     HierarchyOfNeeds needs;
 
-
     // Vector2* memory; // fixed array of vector2 pointers? this way, we can have fixed indices for remembering the location of specific things
                     // for example, the unit remembers that food was at or around {-24, -58} and food is always index 4. meanwhile, mr unit remembers
                     // that his bed is at {-41, -63} which is always at index 2. 
@@ -39,27 +58,19 @@ typedef struct Unit {
 
 } Unit;
 
-// Global variables
-extern GameScreen currentScreen; // simply declaring that this variable exists. we define it in main.c
-
-
-// Screens 
-
-// title.c
-void UpdateTitleScreen(void);
-
-// gameplay.c
-void UpdateGameplayScreen(void);
-
-
-// Mechanics -------------------
-
-// map.c
-int* returnMapData(int rows, int columns);
-
-// characters.c
 Unit* returnUnitData(void);
 
+// time.c ---------------------------------------------------------------------------------------------
+
+#define SECOND 1.0f // very close to one second
+
+typedef struct {
+    float Lifetime;
+}Timer;
+
+void StartTimer(Timer* timer, float duration);
+void UpdateTimer(Timer* timer);
+bool TimerDone(Timer* timer);
 
 
 #endif

@@ -7,16 +7,15 @@
 GameScreen currentScreen = GAMEPLAY;
 // GameScreen currentScreen = TITLE;
 
-const int screenWidth = 1400;
-const int screenHeight = 1000;
 
 static void UpdateDrawFrame(void);
 
 
 int main(void)
 {
-    printf("hello world!!!!!\n");
-
+    const int screenWidth = 1400;
+    const int screenHeight = 1000;
+    
     InitWindow(screenWidth, screenHeight, "Raylib 6");
 
     SetTargetFPS(60);

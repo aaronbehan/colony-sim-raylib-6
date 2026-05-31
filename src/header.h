@@ -2,6 +2,12 @@
 #define HEADER_H
 
 
+
+// #define SCREEN_WIDTH 1400
+// #define SCREEN_HEIGHT 1000
+#define TILE_SIZE 16
+
+
 // Types and structure definitions
 typedef enum GameScreen { TITLE, GAMEPLAY } GameScreen;
 
@@ -44,7 +50,7 @@ typedef struct Unit {
 
     HierarchyOfNeeds needs;
 
-    // Vector2* memory; // fixed array of vector2 pointers? this way, we can have fixed indices for remembering the location of specific things
+    Vector2* memory; // fixed array of vector2 pointers? this way, we can have fixed indices for remembering the location of specific things
                     // for example, the unit remembers that food was at or around {-24, -58} and food is always index 4. meanwhile, mr unit remembers
                     // that his bed is at {-41, -63} which is always at index 2. 
                     // INFORMATION EXCHANGE BETWEEN UNITS. if one unit knows where to find X, another unit can ask him and find out

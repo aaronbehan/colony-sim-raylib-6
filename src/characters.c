@@ -30,6 +30,4 @@ void behaviourTree(Unit* unit)
         // if (units[i].position.z > units[i].waypoint.z) units[i].position.z -= units[i].archetype->speed;
 
     }
-
-
 }

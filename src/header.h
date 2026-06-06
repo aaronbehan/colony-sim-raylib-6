@@ -1,10 +1,6 @@
 #ifndef HEADER_H
 #define HEADER_H
 
-
-
-// #define SCREEN_WIDTH 1400
-// #define SCREEN_HEIGHT 1000
 #define TILE_SIZE 16
 
 
@@ -27,7 +23,7 @@ void UpdateGameplayScreen(void);
 // Mechanics -------------------
 
 // map.c
-int* returnMapData(int rows, int columns);
+int* returnMapData(Vector2 mapLimits);
 
 // characters.c ---------------------------------------------------------------------------------------------
 
@@ -60,7 +56,7 @@ typedef struct Unit {
                         // be the exact same and will trigger the unit to consult its memory for where it last saw food 
 
     // int *inventory;  // what the unit is currently carrying around with it
-    // int *possessions;  // what the unit feels as though he owns. for example, in his room as well as in his inventory. if a possession is taken, bad mood. consequences
+    // int *possessions;  // what the unit feels as though he owns. for example, in his room as well as in his inventory. if a possession is missing/taken, bad mood. consequences
 
 } Unit;
 

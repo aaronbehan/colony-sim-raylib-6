@@ -5,7 +5,7 @@
 
 #include "header.h"
 
-#define CAMERA_MOVE_MODIFIER 50  // This is a necessary value to track in order to synchronise mouse position with camera position
+#define CAMERA_MOVE_MODIFIER 3  // This is a necessary value to track in order to synchronise mouse position with camera position
 #define PLAYER_MOVEMENT_SPEED 3  // temporary just so i can easily mess around
 
 // Global Variables -----
@@ -13,19 +13,18 @@
 
 // ----------------------
 
-void updateCamera(Camera2D* camera, Vector2* cameraMouseDifference);
+void updateCamera(Camera2D* camera, Vector2* cameraMouseDifference, Rectangle* renderingRect, Vector2 mapLimits);
 void updatePlayer(Unit* player);  // temporary function for messing around
 
 void UpdateGameplayScreen(void)
 {
     // Camera
-    Camera2D camera = 
-    {
+    Camera2D camera = {
     .target = (Vector2){0, 0},
     .zoom = 1.0f
     };
 
-    Rectangle renderingRectangle = (Rectangle){0, 0,  32, 64};  // we are saying that we want it to start rendering the tile at coordinate 0,0 and we want it to render EXACTLY 64 tiles
+    Rectangle renderingRectangle = (Rectangle){ 0, 0, (GetScreenWidth() / TILE_SIZE), (GetScreenHeight() / TILE_SIZE) };
 
     // Timer
     bool pauseState = 0;
@@ -33,19 +32,30 @@ void UpdateGameplayScreen(void)
     int ticker = 0; // for counting seconds
     StartTimer(&timer, SECOND);
 
-    Vector2 mousePosition = { 0 };
+    Vector2 mousePosition = { 0 }; // will allow GUI interaction
+    Vector2 mousePositionGridLocked = { 0 };  // will allow world data interaction. may not actually be necessary... 
     Vector2 cameraMouseDifference = { 0, 0 };
     float wheel = 0;
 
     // Determining tile data
-    int rows = 20;
-    int columns = 160;
-    int* map = returnMapData(rows, columns);
+    Vector2 mapLimits = {
+        .y = 80,  // rows
+        .x = 360  // columns
+    };
+    
+    int* map = returnMapData(mapLimits);
 
-    Unit* units = returnUnitData(); 
+    Unit* units = returnUnitData();
+
+    // maybe just load absolutely all textures here and put them into a dynamic array, then whenever we want to use them, we just feed the entire array into the function
 
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
+        mousePosition.x = GetMousePosition().x + cameraMouseDifference.x;
+        mousePosition.y = GetMousePosition().y + cameraMouseDifference.y;
+        mousePositionGridLocked.x = floorf(mousePosition.x / TILE_SIZE);
+        mousePositionGridLocked.y = floorf(mousePosition.y / TILE_SIZE);
+
         // Pause 
         if (!(pauseState)) UpdateTimer(&timer);  // with every single cycle, timer->Lifetime is deducted by GetFrameTime as long as it is greater than 0
         if (TimerDone(&timer)) {  
@@ -54,16 +64,16 @@ void UpdateGameplayScreen(void)
         }
 
         // Player input
-        updateCamera(&camera, &cameraMouseDifference);
+        updateCamera(&camera, &cameraMouseDifference, &renderingRectangle, mapLimits);
         updatePlayer(&units[0]);
-        if (IsKeyPressed(KEY_P)) { if (pauseState) pauseState = 0; else pauseState = 1; };
-        if (IsKeyPressed(KEY_Q)) { renderingRectangle.x --; };
-        if (IsKeyPressed(KEY_E)) { renderingRectangle.x ++; };
+        if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) 
+        {
+            units[0].waypoint = mousePositionGridLocked;
+        }
 
-            
-        mousePosition.x = GetMousePosition().x + cameraMouseDifference.x;
-        mousePosition.y = GetMousePosition().y + cameraMouseDifference.y;
-        wheel = GetMouseWheelMove();
+        if (IsKeyPressed(KEY_P)) { if (pauseState) pauseState = 0; else pauseState = 1; };
+
+
 
         BeginDrawing();
 
@@ -75,26 +85,26 @@ void UpdateGameplayScreen(void)
 
             DrawText("hello", 20, 20, 20, BLACK);
 
-            //   simply start the for loop at the coordinate where the rendering rectangle is. 
-            // We are only rendering stuff that is inside the renderRectangle
-            for (int i = 0; i < rows; i++) {
+            // Rendering only what is inside renderingRectangle location and dimensions
+            for (int i = (int){renderingRectangle.y}; i < ((int){renderingRectangle.y} + (int){renderingRectangle.height}); i++) {
                 for (int j = (int){renderingRectangle.x}; j < ((int){renderingRectangle.x} + (int){renderingRectangle.width}); j++)
                 {
-                    if (map[i * columns + j] == 1) 
+                    if (CheckCollisionPointRec(mousePositionGridLocked, (Rectangle){j, i, 1, 1}))
                     {
+                        DrawRectangleLines(j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE, GREEN);
+                        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                            map[i * (int){mapLimits.x} + j] = 0;
+                        };
+                        if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+                            map[i * (int){mapLimits.x} + j] = 2;
+                        };
+                    }
+
+                    if (map[i * (int){mapLimits.x} + j] != 0) {
                         DrawRectangle(j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE, MAROON);
                         DrawRectangleLines(j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE, BLACK);
 
-                        if (CheckCollisionPointRec(mousePosition, (Rectangle){j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE}))
-                        {
-                            DrawRectangleLines(j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE, GREEN);
-                            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) 
-                            {
-                                map[i * columns + j] = 0;
-                            };
-                        }
-                        if (CheckCollisionPointRec(units[0].position, (Rectangle){j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE}))
-                        {
+                        if (CheckCollisionPointRec(units[0].position, (Rectangle){j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE})) {
                             DrawRectangleLines(j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE, BLUE);
                         }
                     }
@@ -102,15 +112,14 @@ void UpdateGameplayScreen(void)
             }
 
             DrawCircle(units[0].position.x, units[0].position.y, TILE_SIZE / 4, BLUE);
+            
             EndMode2D();
             
             DrawFPS(10, 10);
-            // DrawText(TextFormat("mouseposition= x%fy%f", mousePosition.x, mousePosition.y), 30, 140, 30, LIGHTGRAY);
-            // DrawText(TextFormat("cameramousedifference= x%fy%f", cameraMouseDifference.x, cameraMouseDifference.y), 30, 170, 30, LIGHTGRAY);
-            DrawText(TextFormat("renderingRectangle.x(int)= %d", (int){renderingRectangle.x}), 30, 170, 30, LIGHTGRAY);
-            DrawText(TextFormat("renderingRectangle.width)= %d", (int){renderingRectangle.width}), 30, 210, 30, LIGHTGRAY);
-            // DrawText(TextFormat("ticker= %d", ticker), 30, 170, 30, LIGHTGRAY);
-            // DrawText(TextFormat("pauseState= %d", pauseState), 30, 210, 30, LIGHTGRAY);
+            DrawText(TextFormat("mouse pos= x%fy%f", mousePosition.x, mousePosition.y), 30, 40, 30, LIGHTGRAY);
+            DrawText(TextFormat("mouse pos GL = x%fy%f", mousePositionGridLocked.x, mousePositionGridLocked.y), 30, 75, 30, LIGHTGRAY);
+            DrawText(TextFormat("units[0].waypoint = x%fy%f", units[0].waypoint.x, units[0].waypoint.y), 30, 135, 30, LIGHTGRAY);
+            // DrawText(TextFormat("renderingRectangle coords= %d, %d", (int){renderingRectangle.x}, (int){renderingRectangle.y}), 30, 170, 30, LIGHTGRAY);
 
         EndDrawing();
     }
@@ -120,31 +129,57 @@ void UpdateGameplayScreen(void)
     free(units);
 }
 
-void updateCamera(Camera2D* camera, Vector2* cameraMouseDifference)
+void updateCamera(Camera2D* camera, Vector2* cameraMouseDifference, Rectangle* renderingRect, Vector2 mapLimits)
 {
     if (IsKeyPressed(KEY_W)) {
-        camera->target.y = camera->target.y - CAMERA_MOVE_MODIFIER; 
-        cameraMouseDifference->y = cameraMouseDifference->y - CAMERA_MOVE_MODIFIER;
-    };
-    if (IsKeyPressed(KEY_A)) {
-        camera->target.x = camera->target.x - CAMERA_MOVE_MODIFIER; 
-        cameraMouseDifference->x = cameraMouseDifference->x - CAMERA_MOVE_MODIFIER;
-
+        if ((renderingRect->y - CAMERA_MOVE_MODIFIER) <= 0) 
+        {  // we want to prevent the user from moving left if they are already at the edge of map. otherwise segfault
+            camera->target = (Vector2){ 0 }; 
+            cameraMouseDifference->y = 0;
+            renderingRect->y = 0;
+        }  
+        else 
+        {
+            camera->target.y = camera->target.y - (TILE_SIZE * CAMERA_MOVE_MODIFIER); 
+            cameraMouseDifference->y = cameraMouseDifference->y - (TILE_SIZE * CAMERA_MOVE_MODIFIER);
+            renderingRect->y = renderingRect->y - CAMERA_MOVE_MODIFIER;
+        }
+    }; 
+    if ((IsKeyPressed(KEY_A))) {
+        if ((renderingRect->x - CAMERA_MOVE_MODIFIER) <= 0) 
+        {  // we want to prevent the user from moving left if they are already at the edge of map. otherwise segfault
+            camera->target = (Vector2){ 0 }; 
+            cameraMouseDifference->x = 0;
+            renderingRect->x = 0;
+        }  
+        else 
+        {
+            camera->target.x = camera->target.x - (TILE_SIZE * CAMERA_MOVE_MODIFIER); 
+            cameraMouseDifference->x = cameraMouseDifference->x - (TILE_SIZE * CAMERA_MOVE_MODIFIER);
+            renderingRect->x = renderingRect->x - CAMERA_MOVE_MODIFIER;
+        }
     };
     if (IsKeyPressed(KEY_S)) {
-        camera->target.y = camera->target.y + CAMERA_MOVE_MODIFIER;
-        cameraMouseDifference->y = cameraMouseDifference->y + CAMERA_MOVE_MODIFIER;
-
+        camera->target.y = camera->target.y + (TILE_SIZE * CAMERA_MOVE_MODIFIER);
+        cameraMouseDifference->y = cameraMouseDifference->y + (TILE_SIZE * CAMERA_MOVE_MODIFIER);
+        renderingRect->y = renderingRect->y + CAMERA_MOVE_MODIFIER;
     };
-    if (IsKeyPressed(KEY_D)) {
-        camera->target.x = camera->target.x + CAMERA_MOVE_MODIFIER;
-        cameraMouseDifference->x = cameraMouseDifference->x + CAMERA_MOVE_MODIFIER;
-
-    };
-    if (IsKeyPressed(KEY_SPACE)) {
-        camera->target = (Vector2){ 0 }; 
-        cameraMouseDifference->x = 0;
-        cameraMouseDifference->y = 0;
+    // requires a rethink. the logic should be if D key pressed. if rect.x + rect.width exceeds map limits after performing the rect/camera adjust calc, adjust the position of camera and rect to map limits - rect.width and map limits - camera width?
+    // else: as normal
+    if (IsKeyPressed(KEY_D)) { // && ((renderingRect->x + renderingRect->width) + TILE_SIZE * CAMERA_MOVE_MODIFIER) < (mapLimits.x * TILE_SIZE)) {
+        // if (((renderingRect->x + renderingRect->width) + CAMERA_MOVE_MODIFIER) >= mapLimits.x) 
+        // {
+        //     // something very wrong with the below logic !!!!!!!!!!!!!!!!!!!!!!!!!! fix it pls
+        //     camera->target.x = mapLimits.x - renderingRect->width;
+        //     // cameraMouseDifference->x = cameraMouseDifference->x + (TILE_SIZE * CAMERA_MOVE_MODIFIER);
+        //     renderingRect->x = mapLimits.x - renderingRect->width;
+        // }
+        // else 
+        // {
+            camera->target.x = camera->target.x + (TILE_SIZE * CAMERA_MOVE_MODIFIER);
+            cameraMouseDifference->x = cameraMouseDifference->x + (TILE_SIZE * CAMERA_MOVE_MODIFIER);
+            renderingRect->x = renderingRect->x + CAMERA_MOVE_MODIFIER;
+        // }
     };
 }
 

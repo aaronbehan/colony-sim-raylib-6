@@ -2,6 +2,8 @@
 #define HEADER_H
 
 #define TILE_SIZE 16
+#define MAP_ROWS 100
+#define MAP_COLUMNS 100
 
 
 // Types and structure definitions
@@ -23,7 +25,23 @@ void UpdateGameplayScreen(void);
 // Mechanics -------------------
 
 // map.c
+typedef struct PFNode {
+    Vector2 position;
+    float gCost; // how far the node is from the STARTING node
+    float hCost; // (heuristic) how far the node is from the TARGET node
+    float fCost; // gCost + hCost
+    struct PFNode* parent; // Parent node for path reconstruction
+    int walkable; // 1 if walkable, 0 if not
+} PFNode;
+
+typedef struct PFPath {
+    PFNode* node;
+    int numberOfTiles;
+} PFPath;
+
 int* returnMapData(Vector2 mapLimits);
+PFPath aStar(Vector2 currentPos, Vector2 targetPos, int* mapData);
+
 
 // characters.c ---------------------------------------------------------------------------------------------
 
@@ -39,8 +57,8 @@ typedef struct HierarchyOfNeeds {  // this dictates behaviour. if a unit is thir
 // For character creation
 typedef struct Unit {
     Vector2 position;  
-    Vector2 waypoint;  // Must always start with identical coords as unitPos
-    // PFPath* waypoint to eventually replace above
+    // Vector2 waypoint;  // Must always start with identical coords as unitPos
+    PFPath waypoint;
 
     bool selected;  // selected with the mouse
 

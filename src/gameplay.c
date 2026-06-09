@@ -39,8 +39,8 @@ void UpdateGameplayScreen(void)
 
     // Determining tile data
     Vector2 mapLimits = {
-        .y = 80,  // rows
-        .x = 360  // columns
+        .y = MAP_ROWS,  // rows
+        .x = MAP_COLUMNS  // columns
     };
     
     int* map = returnMapData(mapLimits);
@@ -68,12 +68,15 @@ void UpdateGameplayScreen(void)
         updatePlayer(&units[0]);
         if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) 
         {
-            units[0].waypoint = mousePositionGridLocked;
+            Vector2 startCell = {
+                floorf(units[0].position.x / TILE_SIZE),
+                floorf(units[0].position.y / TILE_SIZE)
+            };
+            units[0].waypoint = aStar(startCell, mousePositionGridLocked, map);
+
         }
 
         if (IsKeyPressed(KEY_P)) { if (pauseState) pauseState = 0; else pauseState = 1; };
-
-
 
         BeginDrawing();
 
@@ -112,13 +115,26 @@ void UpdateGameplayScreen(void)
             }
 
             DrawCircle(units[0].position.x, units[0].position.y, TILE_SIZE / 4, BLUE);
+
+            if (units[0].waypoint.numberOfTiles != 0) 
+            {
+                for (int i = 0; i < units[0].waypoint.numberOfTiles; i++)
+                {
+                    DrawCircle(units[0].waypoint.node[i].position.x * TILE_SIZE, units[0].waypoint.node[i].position.y * TILE_SIZE, TILE_SIZE / 4, BROWN);
+                    DrawText(TextFormat("units[0].waypoint = x%fy%f", units[0].waypoint.node[i].position.x, units[0].waypoint.node[i].position.y), 20, (i * 21), 20, LIGHTGRAY);
+                }
+            }
+            else 
+            {
+                DrawText(TextFormat("units[0].waypoint number of tiles = x%fy%f", units[0].waypoint.numberOfTiles), 20, (21), 20, LIGHTGRAY);
+            }
             
             EndMode2D();
             
             DrawFPS(10, 10);
-            DrawText(TextFormat("mouse pos= x%fy%f", mousePosition.x, mousePosition.y), 30, 40, 30, LIGHTGRAY);
-            DrawText(TextFormat("mouse pos GL = x%fy%f", mousePositionGridLocked.x, mousePositionGridLocked.y), 30, 75, 30, LIGHTGRAY);
-            DrawText(TextFormat("units[0].waypoint = x%fy%f", units[0].waypoint.x, units[0].waypoint.y), 30, 135, 30, LIGHTGRAY);
+            // DrawText(TextFormat("mouse pos= x%fy%f", mousePosition.x, mousePosition.y), 30, 40, 30, LIGHTGRAY);
+            // DrawText(TextFormat("mouse pos GL = x%fy%f", mousePositionGridLocked.x, mousePositionGridLocked.y), 30, 75, 30, LIGHTGRAY);
+
             // DrawText(TextFormat("renderingRectangle coords= %d, %d", (int){renderingRectangle.x}, (int){renderingRectangle.y}), 30, 170, 30, LIGHTGRAY);
 
         EndDrawing();

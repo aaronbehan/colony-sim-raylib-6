@@ -9,7 +9,7 @@ Unit* returnUnitData(void)
 {
     int units = 1;
 
-    Unit *unitData = calloc((units), sizeof(int));  
+    Unit *unitData = calloc(units, sizeof(Unit));  
 
     unitData[0].position = (Vector2){30, 40};
 

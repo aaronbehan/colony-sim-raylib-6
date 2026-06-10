@@ -1,4 +1,6 @@
+#include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "include/raylib.h"
 #include "include/raymath.h"
@@ -6,7 +8,7 @@
 #include "header.h"
 
 #define CAMERA_MOVE_MODIFIER 3  // This is a necessary value to track in order to synchronise mouse position with camera position
-#define PLAYER_MOVEMENT_SPEED 3  // temporary just so i can easily mess around
+#define PLAYER_MOVEMENT_SPEED 8  // temporary just so i can easily mess around
 
 // Global Variables -----
 
@@ -37,7 +39,7 @@ void UpdateGameplayScreen(void)
     Vector2 mousePosition = { 0 }; // will allow GUI interaction
     Vector2 mousePositionGridLocked = { 0 };  // will allow world data interaction. may not actually be necessary... 
     Vector2 cameraMouseDifference = { 0, 0 };
-    float wheel = 0;
+
 
     // Determining tile data
     Vector2 mapLimits = {
@@ -141,7 +143,7 @@ void UpdateGameplayScreen(void)
             EndMode2D();
             
             DrawFPS(10, 10);
-            // DrawText(TextFormat("mouse pos= x%fy%f", mousePosition.x, mousePosition.y), 30, 40, 30, LIGHTGRAY);
+            DrawText(TextFormat("mouse pos= x%fy%f", units[0].position.x, units[0].position.y), 30, 40, 30, LIGHTGRAY);
             // DrawText(TextFormat("mouse pos GL = x%fy%f", mousePositionGridLocked.x, mousePositionGridLocked.y), 30, 75, 30, LIGHTGRAY);
             if (units[0].waypoint.node != NULL) DrawText(TextFormat("units[i].waypoint.node[units[i].waypoint.numberOfTiles - 1].position.x = %f", units[0].waypoint.node[units[0].waypoint.numberOfTiles - 1].position.x ), 30, 750, 30, BLACK);
 
@@ -217,25 +219,31 @@ void updatePlayer(Unit* player)
     if (IsKeyDown(KEY_RIGHT)) { player->position.x = player->position.x + PLAYER_MOVEMENT_SPEED; };
 }
 
-
+// Updating units
 void updateUnits(Unit* units, int numberOfUnits) 
 {
-    // position.x += (GetFrameTime() * PLAYER_MOVEMENT_SPEED)
+    float step = GetFrameTime() * PLAYER_MOVEMENT_SPEED;
 
     for (int i = 0; i < numberOfUnits; i++)
     {
-        if (!(units[i].waypoint.node)) continue;
+        // Ignoring units that do not have a path to follow
+        if (!(units[i].waypoint.numberOfTiles)) continue;
 
-        if (floorf(units[i].waypoint.node[units[i].waypoint.numberOfTiles - 1].position.x ))
+        if (units[i].position.x < (units[i].waypoint.node[units[i].waypoint.numberOfTiles - 1].position.x ) * TILE_SIZE ) {
+            units[i].position.x += step; }
+        if (units[i].position.x > (units[i].waypoint.node[units[i].waypoint.numberOfTiles - 1].position.x ) * TILE_SIZE ) {
+            units[i].position.x -= step; }
+        if (units[i].position.y < (units[i].waypoint.node[units[i].waypoint.numberOfTiles - 1].position.y ) * TILE_SIZE ) {
+            units[i].position.y += step; }
+        if (units[i].position.y > (units[i].waypoint.node[units[i].waypoint.numberOfTiles - 1].position.y ) * TILE_SIZE ) {
+            units[i].position.y -= step; }
+        
+        // Recognise whether unit has reached its target, in which case, decriment numberOfTiles
+        if ((fabsf(units[i].position.x - units[i].waypoint.node[units[i].waypoint.numberOfTiles - 1].position.x * TILE_SIZE) < step)
+        && (fabsf(units[i].position.y - units[i].waypoint.node[units[i].waypoint.numberOfTiles - 1].position.y * TILE_SIZE) < step))
         {
-            
+            units[i].waypoint.numberOfTiles--;
         }
 
     }
-
-    // if (units[0].position.x < units[0].waypoint.node->position.x) units[i].position.x += PLAYER_MOVEMENT_SPEED;
-    // if (units[0].position.x > units[i].waypoint.x) units[i].position.x -= units[i].archetype->speed;
-    // if (units[0].position.y < units[i].waypoint.z) units[i].position.z += units[i].archetype->speed;
-    // if (units[0].position.y > units[i].waypoint.z) units[i].position.z -= units[i].archetype->speed;
-
 }

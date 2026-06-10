@@ -57,7 +57,6 @@ typedef struct HierarchyOfNeeds {  // this dictates behaviour. if a unit is thir
 // For character creation
 typedef struct Unit {
     Vector2 position;  
-    // Vector2 waypoint;  // Must always start with identical coords as unitPos
     PFPath waypoint;
 
     bool selected;  // selected with the mouse

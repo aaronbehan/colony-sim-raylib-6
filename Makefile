@@ -2,7 +2,7 @@
 
 # Compiler and flags
 CC = gcc
-CFLAGS = -I src/include/
+CFLAGS = -g -I src/include/
 
 # Source and objects
 SRC = $(wildcard src/*.c)

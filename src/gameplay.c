@@ -15,6 +15,8 @@
 
 void updateCamera(Camera2D* camera, Vector2* cameraMouseDifference, Rectangle* renderingRect, Vector2 mapLimits);
 void updatePlayer(Unit* player);  // temporary function for messing around
+void updateUnits(Unit* units, int numberOfUnits);
+
 
 void UpdateGameplayScreen(void)
 {
@@ -45,6 +47,7 @@ void UpdateGameplayScreen(void)
     
     int* map = returnMapData(mapLimits);
 
+    int numberOfUnits = 1;
     Unit* units = returnUnitData();
 
     // maybe just load absolutely all textures here and put them into a dynamic array, then whenever we want to use them, we just feed the entire array into the function
@@ -66,14 +69,19 @@ void UpdateGameplayScreen(void)
         // Player input
         updateCamera(&camera, &cameraMouseDifference, &renderingRectangle, mapLimits);
         updatePlayer(&units[0]);
+        updateUnits(units, numberOfUnits);
+
+
         if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) 
         {
             Vector2 startCell = {
                 floorf(units[0].position.x / TILE_SIZE),
                 floorf(units[0].position.y / TILE_SIZE)
             };
-            units[0].waypoint = aStar(startCell, mousePositionGridLocked, map);
 
+            if (units[0].waypoint.node != NULL) free(units[0].waypoint.node);
+            
+            units[0].waypoint = aStar(startCell, mousePositionGridLocked, map);
         }
 
         if (IsKeyPressed(KEY_P)) { if (pauseState) pauseState = 0; else pauseState = 1; };
@@ -116,6 +124,7 @@ void UpdateGameplayScreen(void)
 
             DrawCircle(units[0].position.x, units[0].position.y, TILE_SIZE / 4, BLUE);
 
+            // print tiles 
             if (units[0].waypoint.numberOfTiles != 0) 
             {
                 for (int i = 0; i < units[0].waypoint.numberOfTiles; i++)
@@ -134,14 +143,15 @@ void UpdateGameplayScreen(void)
             DrawFPS(10, 10);
             // DrawText(TextFormat("mouse pos= x%fy%f", mousePosition.x, mousePosition.y), 30, 40, 30, LIGHTGRAY);
             // DrawText(TextFormat("mouse pos GL = x%fy%f", mousePositionGridLocked.x, mousePositionGridLocked.y), 30, 75, 30, LIGHTGRAY);
-
-            // DrawText(TextFormat("renderingRectangle coords= %d, %d", (int){renderingRectangle.x}, (int){renderingRectangle.y}), 30, 170, 30, LIGHTGRAY);
+            if (units[0].waypoint.node != NULL) DrawText(TextFormat("units[i].waypoint.node[units[i].waypoint.numberOfTiles - 1].position.x = %f", units[0].waypoint.node[units[0].waypoint.numberOfTiles - 1].position.x ), 30, 750, 30, BLACK);
 
         EndDrawing();
     }
 
     // Free memory
     free(map);
+
+    if (units[0].waypoint.node != NULL) free(units[0].waypoint.node);
     free(units);
 }
 
@@ -185,7 +195,7 @@ void updateCamera(Camera2D* camera, Vector2* cameraMouseDifference, Rectangle* r
     if (IsKeyPressed(KEY_D)) { // && ((renderingRect->x + renderingRect->width) + TILE_SIZE * CAMERA_MOVE_MODIFIER) < (mapLimits.x * TILE_SIZE)) {
         // if (((renderingRect->x + renderingRect->width) + CAMERA_MOVE_MODIFIER) >= mapLimits.x) 
         // {
-        //     // something very wrong with the below logic !!!!!!!!!!!!!!!!!!!!!!!!!! fix it pls
+        //     // something very wrong with the below logic !!!!!!!!!!!!!!!!!!!!!!!!!
         //     camera->target.x = mapLimits.x - renderingRect->width;
         //     // cameraMouseDifference->x = cameraMouseDifference->x + (TILE_SIZE * CAMERA_MOVE_MODIFIER);
         //     renderingRect->x = mapLimits.x - renderingRect->width;
@@ -205,4 +215,27 @@ void updatePlayer(Unit* player)
     if (IsKeyDown(KEY_LEFT)) { player->position.x = player->position.x - PLAYER_MOVEMENT_SPEED; };
     if (IsKeyDown(KEY_DOWN)) { player->position.y = player->position.y + PLAYER_MOVEMENT_SPEED; };
     if (IsKeyDown(KEY_RIGHT)) { player->position.x = player->position.x + PLAYER_MOVEMENT_SPEED; };
+}
+
+
+void updateUnits(Unit* units, int numberOfUnits) 
+{
+    // position.x += (GetFrameTime() * PLAYER_MOVEMENT_SPEED)
+
+    for (int i = 0; i < numberOfUnits; i++)
+    {
+        if (!(units[i].waypoint.node)) continue;
+
+        if (floorf(units[i].waypoint.node[units[i].waypoint.numberOfTiles - 1].position.x ))
+        {
+            
+        }
+
+    }
+
+    // if (units[0].position.x < units[0].waypoint.node->position.x) units[i].position.x += PLAYER_MOVEMENT_SPEED;
+    // if (units[0].position.x > units[i].waypoint.x) units[i].position.x -= units[i].archetype->speed;
+    // if (units[0].position.y < units[i].waypoint.z) units[i].position.z += units[i].archetype->speed;
+    // if (units[0].position.y > units[i].waypoint.z) units[i].position.z -= units[i].archetype->speed;
+
 }

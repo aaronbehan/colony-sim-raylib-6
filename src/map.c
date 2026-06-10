@@ -45,12 +45,12 @@ PFPath reconstructPath(PFNode* endNode)
         current = current->parent; 
     }
 
-    for (int i = 0; i < path.numberOfTiles / 2; i++) // Reversing the variable so that it's easy for a unit to follow
-    {
-        PFNode temp = path.node[i];
-        path.node[i] = path.node[path.numberOfTiles - 1 - i];
-        path.node[path.numberOfTiles - 1 - i] = temp;
-    }
+    // for (int i = 0; i < path.numberOfTiles / 2; i++) // Reversing the array so that it's easy for a unit to follow
+    // {
+    //     PFNode temp = path.node[i];
+    //     path.node[i] = path.node[path.numberOfTiles - 1 - i];
+    //     path.node[path.numberOfTiles - 1 - i] = temp;
+    // }
 
     return path;
 }
@@ -99,6 +99,18 @@ int isNodeInList(PFNode** list, int listSize, PFNode* node)
         }
     }
     return 0;
+}
+
+// Return pointer to existing node in a list matching node's position, or NULL if not found
+PFNode* getNodeFromList(PFNode** list, int listSize, PFNode* node)
+{
+    for (int i = 0; i < listSize; i++)
+    {
+        if (list[i]->position.x == node->position.x && list[i]->position.y == node->position.y) {
+            return list[i];
+        }
+    }
+    return NULL;
 }
 
 // Function to calculate the heuristic (Euclidean distance)
@@ -169,8 +181,10 @@ PFPath aStar(Vector2 currentPos, Vector2 targetPos, int* mapData)
             for (int i = 0; i < openListSize; i++) free(openList[i]);
             free(openList);
 
-            for (int i = 0; i < closedListSize; i++) free(closedList[i]);   // where the error occurs!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            for (int i = 0; i < closedListSize; i++) free(closedList[i]);
             free(closedList);
+
+            free(endNode);
 
             return path;
         }
@@ -182,35 +196,54 @@ PFPath aStar(Vector2 currentPos, Vector2 targetPos, int* mapData)
         {
             PFNode* neighbor = neighbors[i];
 
+            // If neighbor is in closed list, discard the newly allocated neighbor
             if (isNodeInList(closedList, closedListSize, neighbor)) {
-                free(neighbor);
-                continue;  // skip everything below it and move onto the next iteration
-            }
-
-            float tentativeGCost = currentNode->gCost + calculateHeuristic(currentNode, neighbor);  // this does work for getting the g cost. you take the g cost from parent node and add 1 or 1.4. i'm guessing these values are returned from the calculateH func
-
-            if (!isNodeInList(openList, openListSize, neighbor)) // if node is not in the openList: add it to the open list. !!!!!!! significant step!
-            {  
-                if ((openListSize + 1) >= openListAllowance) { // checking if more memory is needed
-                    openListAllowance = 2 * openListSize;
-                    PFNode** temp = realloc(openList, sizeof(PFNode*) * (openListAllowance));  // is this honestly right?
-                    if (temp) openList = temp;
-                }
-                openList[openListSize++] = neighbor;
-            } 
-            // This needs looking into
-            else if (tentativeGCost >= neighbor->gCost) {  // if node is in the list and the newly calculated gcost is greater than its previously calculated gcost, skip to next iteration
                 free(neighbor);
                 continue;
             }
 
-            // initialise its members 
-            neighbor->gCost = tentativeGCost;
-            neighbor->hCost = calculateHeuristic(neighbor, endNode);
-            neighbor->fCost = neighbor->gCost + neighbor->hCost;
-            neighbor->parent = currentNode;
+            float tentativeGCost = currentNode->gCost + calculateHeuristic(currentNode, neighbor);
+
+            // Check if an equivalent node already exists in openList
+            PFNode* existingOpen = getNodeFromList(openList, openListSize, neighbor);
+
+            if (existingOpen == NULL) {
+                // Not present in open list: add the newly allocated neighbor
+                if ((openListSize + 1) >= openListAllowance) 
+                { // checking if more memory is needed
+                    openListAllowance = (openListAllowance > 0) ? (2 * openListAllowance) : 4;
+                    PFNode** temp = realloc(openList, sizeof(PFNode*) * (openListAllowance));
+                    if (temp) openList = temp;
+                }
+                // initialise its members before pushing
+                neighbor->gCost = tentativeGCost;
+                neighbor->hCost = calculateHeuristic(neighbor, endNode);
+                neighbor->fCost = neighbor->gCost + neighbor->hCost;
+                neighbor->parent = currentNode;
+
+                openList[openListSize++] = neighbor;
+            } else {
+                // An equivalent node exists in open list: see if this path is better
+                if (tentativeGCost < existingOpen->gCost) {
+                    existingOpen->gCost = tentativeGCost;
+                    existingOpen->parent = currentNode;
+                    existingOpen->hCost = calculateHeuristic(existingOpen, endNode);
+                    existingOpen->fCost = existingOpen->gCost + existingOpen->hCost;
+                }
+                // discard the duplicate allocation
+                free(neighbor);
+            }
         }
     }
+
+    // free all memory
+    for (int i = 0; i < openListSize; i++) free(openList[i]);
+    free(openList);
+
+    for (int i = 0; i < closedListSize; i++) free(closedList[i]);
+    free(closedList);
+
+    free(endNode);
 
     return path;  // this just mitigates an annoying warning
 }
